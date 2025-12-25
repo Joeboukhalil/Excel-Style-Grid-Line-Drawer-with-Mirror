@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Mirror Draw</title>
+<style>
+body { margin:0; font-family:Arial; background:#111; color:white; }
+header { background:#222; padding:10px; text-align:center; }
+canvas { flex:1; touch-action:none; background:white; display:inline-block; }
+button, a { background:#4caf50; color:black; border:none; padding:8px 12px; font-weight:bold; cursor:pointer; margin:5px; text-decoration:none; }
+#container { display:flex; height:calc(100vh-50px); }
+</style>
+</head>
+<body>
+
+<header>
+  <button onclick="downloadImage()">Download</button>
+  <a href="index.html">Back to Grid Page</a>
+</header>
+
+<div id="container">
+  <canvas id="leftCanvas"></canvas>
+  <canvas id="rightCanvas"></canvas>
+</div>
+
+<script>
+const left = document.getElementById("leftCanvas");
+const right = document.getElementById("rightCanvas");
+left.width = right.width = window.innerWidth/2;
+left.height = right.height = window.innerHeight-50;
+const lctx = left.getContext("2d");
+const rctx = right.getContext("2d");
+
+let drawing=false;
+let last={x:0,y:0};
+
+left.addEventListener("pointerdown", e=>{
+  drawing=true;
+  last.x=e.offsetX; last.y=e.offsetY;
+});
+
+left.addEventListener("pointermove", e=>{
+  if(!drawing) return;
+  lctx.strokeStyle="black";
+  lctx.lineWidth=2;
+  lctx.beginPath();
+  lctx.moveTo(last.x,last.y);
+  lctx.lineTo(e.offsetX,e.offsetY);
+  lctx.stroke();
+  last.x=e.offsetX; last.y=e.offsetY;
+  drawMirror();
+});
+
+left.addEventListener("pointerup", e=>{drawing=false;});
+left.addEventListener("pointerleave", e=>{drawing=false;});
+
+function drawMirror(){
+  rctx.clearRect(0,0,right.width,right.height);
+  rctx.save();
+  rctx.scale(-1,1); // mirror horizontally
+  rctx.drawImage(left,-right.width,0);
+  rctx.restore();
+}
+
+function downloadImage(){
+  const c=document.createElement("canvas");
+  c.width = left.width+right.width;
+  c.height = left.height;
+  const ctx = c.getContext("2d");
+  ctx.drawImage(left,0,0);
+  ctx.drawImage(right,left.width,0);
+  const a=document.createElement("a");
+  a.download="mirror_draw.png";
+  a.href=c.toDataURL();
+  a.click();
+}
+</script>
+
+</body>
+</html>

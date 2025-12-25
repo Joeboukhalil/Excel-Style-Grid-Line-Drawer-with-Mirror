@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Excel-Style Grid Connect with Mirror</title>
+<style>
+body { margin:0; font-family:Arial; background:#111; color:white; }
+header { background:#222; padding:10px; text-align:center; }
+button, a { background:#4caf50; color:black; border:none; padding:8px 12px; font-weight:bold; cursor:pointer; margin:5px; text-decoration:none; }
+#container { display:flex; }
+canvas { display:block; background:white; }
+</style>
+</head>
+<body>
+
+<header>
+  <button onclick="downloadCanvas()">Download</button>
+  <a href="draw.html">Go to Draw Page</a>
+</header>
+
+<div id="container">
+  <canvas id="leftCanvas"></canvas>
+  <canvas id="rightCanvas"></canvas>
+</div>
+
+<script>
+const left = document.getElementById("leftCanvas");
+const right = document.getElementById("rightCanvas");
+const lctx = left.getContext("2d");
+const rctx = right.getContext("2d");
+
+// Canvas size
+left.width = right.width = 800;
+left.height = right.height = 800;
+
+const rows = 26; // a-z
+const cols = 26; // 1-26
+const cellSizeX = left.width / cols;
+const cellSizeY = left.height / rows;
+const rowLabels = 'abcdefghijklmnopqrstuvwxyz'.split('');
+let selected = [];
+let lines = [];
+
+// ---------- Draw grid ----------
+function drawGrid(){
+  lctx.clearRect(0,0,left.width,left.height);
+  rctx.clearRect(0,0,right.width,right.height);
+
+  // Draw row letters
+  lctx.font = (cellSizeY*0.5)+"px Arial";
+  lctx.textAlign="right";
+  lctx.textBaseline="middle";
+  for(let r=0;r<rows;r++){
+    lctx.fillStyle="black";
+    lctx.fillText(rowLabels[r], 0, r*cellSizeY + cellSizeY/2);
+  }
+
+  // Draw column numbers
+  lctx.textAlign="center";
+  lctx.textBaseline="top";
+  for(let c=0;c<cols;c++){
+    lctx.fillStyle="black";
+    lctx.fillText(c+1, c*cellSizeX + cellSizeX/2, 0);
+  }
+
+  // Draw grid lines
+  lctx.strokeStyle="#aaa";
+  for(let r=0;r<=rows;r++){
+    lctx.beginPath();
+    lctx.moveTo(0,r*cellSizeY);
+    lctx.lineTo(left.width,r*cellSizeY);
+    lctx.stroke();
+  }
+  for(let c=0;c<=cols;c++){
+    lctx.beginPath();
+    lctx.moveTo(c*cellSizeX,0);
+    lctx.lineTo(c*cellSizeX,left.height);
+    lctx.stroke();
+  }
+
+  // Right canvas mirrors left
+  rctx.strokeStyle="#aaa";
+  for(let r=0;r<=rows;r++){
+    rctx.beginPath();
+    rctx.moveTo(0,r*cellSizeY);
+    rctx.lineTo(right.width,r*cellSizeY);
+    rctx.stroke();
+  }
+  for(let c=0;c<=cols;c++){
+    rctx.beginPath();
+    rctx.moveTo(c*cellSizeX,0);
+    rctx.lineTo(c*cellSizeX,right.height);
+    rctx.stroke();
+  }
+
+  // Draw lines
+  lines.forEach(l=>{
+    // left
+    lctx.strokeStyle="red"; lctx.lineWidth=2;
+    lctx.beginPath(); lctx.moveTo(l[0].x,l[0].y); lctx.lineTo(l[1].x,l[1].y); lctx.stroke();
+    // right mirrored horizontally
+    rctx.strokeStyle="red"; rctx.lineWidth=2;
+    rctx.beginPath();
+    rctx.moveTo(right.width - l[0].x, l[0].y);
+    rctx.lineTo(right.width - l[1].x, l[1].y);
+    rctx.stroke();
+  });
+}
+
+drawGrid();
+
+// ---------- Click to select intersection points ----------
+left.addEventListener("click", e=>{
+  const rect = left.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+
+  const col = Math.floor(mx / cellSizeX);
+  const row = Math.floor(my / cellSizeY);
+
+  // Connection point at intersection center
+  const cx = col*cellSizeX + cellSizeX/2;
+  const cy = row*cellSizeY + cellSizeY/2;
+  selected.push({x:cx, y:cy});
+
+  if(selected.length===2){
+    lines.push([selected[0],selected[1]]);
+    selected=[];
+    drawGrid();
+  }
+});
+
+// ---------- Download ----------
+function downloadCanvas(){
+  const c = document.createElement("canvas");
+  c.width = left.width + right.width;
+  c.height = left.height;
+  const ctx = c.getContext("2d");
+  ctx.drawImage(left,0,0);
+  ctx.drawImage(right,left.width,0);
+  const a = document.createElement("a");
+  a.download="grid_lines_mirror.png";
+  a.href = c.toDataURL();
+  a.click();
+}
+</script>
+
+</body>
+</html>
